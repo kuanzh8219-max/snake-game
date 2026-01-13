@@ -14,6 +14,7 @@
       background: #2b2b2b;
       color: #fff;
       font-family: Arial, sans-serif;
+      touch-action: none; /* prevent scroll on mobile */
     }
 
     #container {
@@ -21,25 +22,28 @@
     }
 
     canvas {
-      background: radial-gradient(circle at top, #2e2e2e 0%, #1a1a1a 70%);
+      width: 90vw;
+      max-width: 400px;
+      height: auto;
+      background: #1e1e1e;
       border: 4px solid #00e676;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+      border-radius: 12px;
     }
 
-    #info {
-      margin-top: 10px;
-      font-size: 16px;
-    }
-
-    button {
+    #controls {
       margin-top: 12px;
-      padding: 10px 24px;
-      font-size: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 14px;
+      font-size: 18px;
+      border-radius: 12px;
       border: none;
-      border-radius: 20px;
-      cursor: pointer;
-      background: linear-gradient(to right, #66bb6a, #43a047);
+      background: #4caf50;
       color: #000;
     }
   </style>
@@ -49,6 +53,19 @@
     <canvas id="game" width="400" height="400"></canvas>
     <div id="info">Score: <span id="score">0</span></div>
     <button id="startBtn">Start Game</button>
+
+    <!-- Mobile Controls -->
+    <div id="controls">
+      <div></div>
+      <button class="btn" id="up">⬆️</button>
+      <div></div>
+      <button class="btn" id="left">⬅️</button>
+      <button class="btn" id="pause">⏸</button>
+      <button class="btn" id="right">➡️</button>
+      <div></div>
+      <button class="btn" id="down">⬇️</button>
+      <div></div>
+    </div>
   </div>
 
   <script>
@@ -188,14 +205,17 @@
       ctx.fillRect(food.x, food.y, box, box);
     }
 
+    // ⌨️ Keyboard controls
     document.addEventListener('keydown', e => {
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
         e.preventDefault();
       }
+
       if (e.code === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
       if (e.code === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
       if (e.code === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
       if (e.code === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+
       if (e.code === 'Space') {
         if (gameOver) {
           initGame();
@@ -207,7 +227,19 @@
       }
     });
 
+    // 📱 Mobile button controls
+    document.getElementById('up').onclick = () => direction !== 'DOWN' && (direction = 'UP');
+    document.getElementById('down').onclick = () => direction !== 'UP' && (direction = 'DOWN');
+    document.getElementById('left').onclick = () => direction !== 'RIGHT' && (direction = 'LEFT');
+    document.getElementById('right').onclick = () => direction !== 'LEFT' && (direction = 'RIGHT');
+    document.getElementById('pause').onclick = () => {
+      paused = !paused;
+      pauseSound.currentTime = 0;
+      pauseSound.play();
+    };
+
     startBtn.addEventListener('click', initGame);
   </script>
 </body>
 </html>
+
