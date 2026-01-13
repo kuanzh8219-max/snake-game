@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #2b2b2b;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    #container {
+      text-align: center;
+    }
+
+    canvas {
+      background: radial-gradient(circle at top, #2e2e2e 0%, #1a1a1a 70%);
+      border: 4px solid #00e676;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+    }
+
+    #info {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 10px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      background: linear-gradient(to right, #66bb6a, #43a047);
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <canvas id="game" width="400" height="400"></canvas>
+    <div id="info">Score: <span id="score">0</span></div>
+    <button id="startBtn">Start Game</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreText = document.getElementById('score');
+    const startBtn = document.getElementById('startBtn');
+
+    const box = 20;
+
+    let snake = [];
+    let food = {};
+    let direction = 'RIGHT';
+    let score = 0;
+    let gameInterval = null;
+    let paused = false;
+    let gameOver = false;
+
+    // 🔊 Sound effects
+    const eatSound = new Audio('https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3');
+    const pauseSound = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
+    const gameOverSound = new Audio('https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3');
+
+    function spawnFood() {
+      food = {
+        x: Math.floor(Math.random() * (canvas.width / box)) * box,
+        y: Math.floor(Math.random() * (canvas.height / box)) * box
+      };
+    }
+
+    function initGame() {
+      clearInterval(gameInterval);
+      snake = [{ x: 9 * box, y: 9 * box }];
+      direction = 'RIGHT';
+      score = 0;
+      paused = false;
+      gameOver = false;
+      scoreText.textContent = score;
+      spawnFood();
+      startBtn.textContent = 'Restart Game';
+      gameInterval = setInterval(gameLoop, 120);
+    }
+
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      for (let i = 0; i <= canvas.width; i += box) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= canvas.height; i += box) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+    }
+
+    function drawPausedOverlay() {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 36px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+    }
+
+    function drawGameOver() {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#ff5252';
+      ctx.font = 'bold 48px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '20px Arial';
+      ctx.fillText('Score: ' + score, canvas.width / 2, canvas.height / 2);
+
+      ctx.font = '16px Arial';
+      ctx.fillStyle = '#cccccc';
+      ctx.fillText('Press SPACE to Restart', canvas.width / 2, canvas.height / 2 + 40);
+    }
+
+    function collision(head, body) {
+      return body.some(seg => seg.x === head.x && seg.y === head.y);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+
+      if (paused) {
+        drawPausedOverlay();
+        return;
+      }
+
+      let head = { ...snake[0] };
+
+      if (direction === 'LEFT') head.x -= box;
+      if (direction === 'RIGHT') head.x += box;
+      if (direction === 'UP') head.y -= box;
+      if (direction === 'DOWN') head.y += box;
+
+      if (
+        head.x < 0 || head.y < 0 ||
+        head.x >= canvas.width || head.y >= canvas.height ||
+        collision(head, snake)
+      ) {
+        clearInterval(gameInterval);
+        gameOver = true;
+        gameOverSound.currentTime = 0;
+        gameOverSound.play();
+        drawGameOver();
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        scoreText.textContent = score;
+        eatSound.currentTime = 0;
+        eatSound.play();
+        spawnFood();
+      } else {
+        snake.pop();
+      }
+
+      ctx.fillStyle = '#00e676';
+      snake.forEach(seg => ctx.fillRect(seg.x, seg.y, box, box));
+
+      ctx.fillStyle = '#ffeb3b';
+      ctx.fillRect(food.x, food.y, box, box);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+      if (e.code === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+      if (e.code === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+      if (e.code === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
+      if (e.code === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+      if (e.code === 'Space') {
+        if (gameOver) {
+          initGame();
+        } else {
+          paused = !paused;
+          pauseSound.currentTime = 0;
+          pauseSound.play();
+        }
+      }
+    });
+
+    startBtn.addEventListener('click', initGame);
+  </script>
+</body>
+</html>
