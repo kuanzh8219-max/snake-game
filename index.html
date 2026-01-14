@@ -247,6 +247,32 @@ window.addEventListener('keydown', e => {
 });
 
 startBtn.onclick = initGame;
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', e => {
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  if (paused || gameOver) return;
+
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - touchStartX;
+  const dy = touch.clientY - touchStartY;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // left / right
+    if (dx > 30 && direction !== 'LEFT') direction = 'RIGHT';
+    if (dx < -30 && direction !== 'RIGHT') direction = 'LEFT';
+  } else {
+    // up / down
+    if (dy > 30 && direction !== 'UP') direction = 'DOWN';
+    if (dy < -30 && direction !== 'DOWN') direction = 'UP';
+  }
+}, { passive: false });
 
 let deferredPrompt;
 const installBtn = document.getElementById('installBtn');
@@ -274,3 +300,4 @@ installBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
